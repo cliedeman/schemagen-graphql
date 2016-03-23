@@ -1,0 +1,276 @@
+<!DOCTYPE html>
+<html lang="en-us">
+  <head>
+    <meta charset="UTF-8">
+    <title>Schemagen-graphql by bpatters</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <link rel="stylesheet" type="text/css" href="stylesheets/normalize.css" media="screen">
+    <link href='https://fonts.googleapis.com/css?family=Open+Sans:400,700' rel='stylesheet' type='text/css'>
+    <link rel="stylesheet" type="text/css" href="stylesheets/stylesheet.css" media="screen">
+    <link rel="stylesheet" type="text/css" href="stylesheets/github-light.css" media="screen">
+  </head>
+  <body>
+    <section class="page-header">
+      <h1 class="project-name">Schemagen-graphql</h1>
+      <h2 class="project-tagline">GraphQL-Java add-on that adds support for Schema Generation &amp; Execution for enterprise level applications.</h2>
+      <a href="https://github.com/bpatters/schemagen-graphql" class="btn">View on GitHub</a>
+      <a href="https://github.com/bpatters/schemagen-graphql/zipball/master" class="btn">Download .zip</a>
+      <a href="https://github.com/bpatters/schemagen-graphql/tarball/master" class="btn">Download .tar.gz</a>
+    </section>
+
+    <section class="main-content">
+      <h1>
+<a id="java-graphql-schema-generation-and-execution-framework" class="anchor" href="#java-graphql-schema-generation-and-execution-framework" aria-hidden="true"><span aria-hidden="true" class="octicon octicon-link"></span></a>Java GraphQL Schema Generation and Execution Framework</h1>
+
+<p>The versioning follows <a href="http://semver.org">Semantic Versioning</a>.
+<a href="https://travis-ci.org/bpatters/schemagen-graphql"><img src="https://travis-ci.org/bpatters/schemagen-graphql.svg?branch=master" alt="Build Status"></a>
+<a href="https://maven-badges.herokuapp.com/maven-central/com.bretpatterson/schemagen-graphql/"><img src="https://maven-badges.herokuapp.com/maven-central/com.bretpatterson/schemagen-graphql/badge.svg" alt="Latest Release"></a></p>
+
+<h1>
+<a id="table-of-contents" class="anchor" href="#table-of-contents" aria-hidden="true"><span aria-hidden="true" class="octicon octicon-link"></span></a>Table of Contents</h1>
+
+<ul>
+<li><a href="#overview">Overview</a></li>
+<li><a href="#dependencies">Dependencies</a></li>
+<li><a href="#hello-world">Hello World</a></li>
+<li><a href="#basic-concepts">Basic Concepts</a></li>
+<li><a href="#graphql-controllers">GraphQL Controllers</a></li>
+<li><a href="#type-mappers">Type Mappers</a></li>
+</ul>
+
+<h3>
+<a id="overview" class="anchor" href="#overview" aria-hidden="true"><span aria-hidden="true" class="octicon octicon-link"></span></a>Overview</h3>
+
+<p>This is a java to GraphQL schema generation and execution package. This originated the week of January 18th, 2016 as a HackWeek 
+project I worked on.  The goal of this is a production level quality project that can be used to build
+a Java based GraphQL server. 
+The following principles will guide this projects evolution:</p>
+
+<ul>
+<li>An un-opinionated view of the container the server will use.</li>
+<li>An un-opinionated view of the serialization model you will be using</li>
+<li>Sensible defaults so that setup is extremely easy and straightforward</li>
+<li>Extensible enough to handle the most extreme Enterprise scenarios</li>
+<li>A minimal set of dependencies to utilize the framework.</li>
+</ul>
+
+<p>Initial Versions will have a base version of Java 7 and require the Guava Module. Future versions will possibly be based on Java 8 and
+possibly require the Guava module (TBD).</p>
+
+<h3>
+<a id="dependencies" class="anchor" href="#dependencies" aria-hidden="true"><span aria-hidden="true" class="octicon octicon-link"></span></a>Dependencies</h3>
+
+<ul>
+<li>Guava (regardless if you include the guava type mapping package)</li>
+<li>SLF4J (logging)</li>
+<li>GraphQL-Java</li>
+</ul>
+
+<h3>
+<a id="hello-world" class="anchor" href="#hello-world" aria-hidden="true"><span aria-hidden="true" class="octicon octicon-link"></span></a>Hello World</h3>
+
+<p>The Hello World program below is the simplest GraphQL server you can write. It exposes the GraphQL schema as a CLI
+that you can run from the command line.</p>
+
+<p>Here is a simple hello world usage scenario</p>
+
+<div class="highlight highlight-source-java"><pre>
+<span class="pl-k">package</span> <span class="pl-smi">com.bretpatterson.schemagen.graphql.examples</span>;
+
+<span class="pl-k">import</span> <span class="pl-smi">com.bretpatterson.schemagen.graphql.annotations.GraphQLQuery</span>;
+<span class="pl-k">import</span> <span class="pl-smi">com.bretpatterson.schemagen.graphql.annotations.GraphQLController</span>;
+<span class="pl-k">import</span> <span class="pl-smi">com.fasterxml.jackson.databind.ObjectMapper</span>;
+<span class="pl-k">import</span> <span class="pl-smi">com.google.common.collect.ImmutableList</span>;
+<span class="pl-k">import</span> <span class="pl-smi">com.bretpatterson.schemagen.graphql.GraphQLSchemaBuilder</span>;
+<span class="pl-k">import</span> <span class="pl-smi">com.bretpatterson.schemagen.graphql.examples.common.JacksonTypeFactory</span>;
+
+<span class="pl-k">import</span> <span class="pl-smi">graphql.ExecutionResult</span>;
+<span class="pl-k">import</span> <span class="pl-smi">graphql.GraphQL</span>;
+<span class="pl-k">import</span> <span class="pl-smi">graphql.schema.GraphQLSchema</span>;
+
+<span class="pl-c">/**</span>
+<span class="pl-c"> * This is a hello world example of a graphQL query CLI</span>
+<span class="pl-c"> */</span>
+@<span class="pl-smi">GraphQLController</span>
+<span class="pl-k">public</span> <span class="pl-k">class</span> <span class="pl-en">HelloWorld</span> {
+
+    <span class="pl-k">@GraphQLQuery</span>(<span class="pl-c1">name</span><span class="pl-k">=</span><span class="pl-s"><span class="pl-pds">"</span>helloWorld<span class="pl-pds">"</span></span>)
+    <span class="pl-k">public</span> <span class="pl-smi">String</span> <span class="pl-en">helloWorld</span>() {
+
+        <span class="pl-k">return</span> <span class="pl-s"><span class="pl-pds">"</span>Hello World!<span class="pl-pds">"</span></span>;
+    }
+
+    <span class="pl-k">public</span> <span class="pl-k">static</span> <span class="pl-k">void</span> <span class="pl-en">main</span>(<span class="pl-k">String</span>[] <span class="pl-v">args</span>) <span class="pl-k">throws</span> <span class="pl-smi">Exception</span> {
+        <span class="pl-c">// the object that we want to expose it's methods as queries</span>
+        <span class="pl-smi">HelloWorld</span> helloWorld <span class="pl-k">=</span> <span class="pl-k">new</span> <span class="pl-smi">HelloWorld</span>();
+        <span class="pl-c">// we use a Jackson object mapper object for serialization of values</span>
+        <span class="pl-smi">ObjectMapper</span> objectMapper <span class="pl-k">=</span> <span class="pl-k">new</span> <span class="pl-smi">ObjectMapper</span>();
+        <span class="pl-smi">GraphQLSchema</span> schema <span class="pl-k">=</span> <span class="pl-smi">GraphQLSchemaBuilder</span><span class="pl-k">.</span>newBuilder()
+                <span class="pl-c">// register an object mappper so that parameter datatypes can be deserialized for method invocation</span>
+                .registerTypeFactory(<span class="pl-k">new</span> <span class="pl-smi">JacksonTypeFactory</span>(objectMapper))
+                <span class="pl-c">// register the instance of Hello World as our query handler</span>
+                .registerGraphQLControllerObjects(<span class="pl-smi">ImmutableList</span><span class="pl-k">.</span><span class="pl-k">&lt;</span><span class="pl-smi">Object</span><span class="pl-k">&gt;</span>of(helloWorld))
+                .build();
+
+        <span class="pl-smi">String</span> queryString <span class="pl-k">=</span> <span class="pl-s"><span class="pl-pds">"</span>{ helloWorld }<span class="pl-pds">"</span></span>;
+
+        <span class="pl-k">if</span> (args<span class="pl-k">.</span>length <span class="pl-k">&gt;</span> <span class="pl-c1">0</span>) {
+            queryString <span class="pl-k">=</span> args[<span class="pl-c1">0</span>];
+        }
+
+        <span class="pl-c">// now lets execute a query against the schema</span>
+        <span class="pl-smi">ExecutionResult</span> result <span class="pl-k">=</span> <span class="pl-k">new</span> <span class="pl-smi">GraphQL</span>(schema)<span class="pl-k">.</span>execute(queryString);
+        <span class="pl-k">if</span> (result<span class="pl-k">.</span>getErrors()<span class="pl-k">.</span>size() <span class="pl-k">!=</span> <span class="pl-c1">0</span>) {
+            <span class="pl-c">// if there are any errors serialize them using jackson and write them to stderr</span>
+            <span class="pl-smi">System</span><span class="pl-k">.</span>err<span class="pl-k">.</span>println(objectMapper<span class="pl-k">.</span>writeValueAsString(result<span class="pl-k">.</span>getErrors()));
+        } <span class="pl-k">else</span> {
+            <span class="pl-c">// output your response as JSON serialized data</span>
+            <span class="pl-smi">System</span><span class="pl-k">.</span>out<span class="pl-k">.</span>println(objectMapper<span class="pl-k">.</span>writeValueAsString(result<span class="pl-k">.</span>getData()));
+        }
+    }
+}
+</pre></div>
+
+<h3>
+<a id="basic-concepts" class="anchor" href="#basic-concepts" aria-hidden="true"><span aria-hidden="true" class="octicon octicon-link"></span></a>Basic Concepts</h3>
+
+<blockquote>
+<p>GraphQL is a data query language and runtime designed and used at Facebook to request and deliver data to mobile and web apps since 2012.</p>
+</blockquote>
+
+<p>Schemagen GraphQL is a package that allows you to turn POJO's into a GraphQL Queryable set of objects. Typically these objects consist of two types:</p>
+
+<ul>
+<li>Objects with methods that perform Queries or Mutations</li>
+<li>Plain Data Objects used as return values and/or Parameters to Queries/Mutations.</li>
+</ul>
+
+<p>Queryable objects are POJO's where the class is annotated with <a href="https://github.com/bpatters/schemagen-graphql/blob/master/src/main/java/com/bretpatterson/schemagen/graphql/annotations/GraphQLController.java">@GraphQLController</a> which signals that it contains methods annotated with <a href="https://github.com/bpatters/schemagen-graphql/blob/master/src/main/java/com/bretpatterson/schemagen/graphql/annotations/GraphQLQuery.java">@GraphQLQuery</a> or <a href="https://github.com/bpatters/schemagen-graphql/blob/master/src/main/java/com/bretpatterson/schemagen/graphql/annotations/GraphQLMutation.java">@GraphQLMutation</a>. These objects have their annotated methods exposed as top level GraphQL fields as Queries or Mutations. </p>
+
+<p>Plain Data Objects are used to pass data back and forth between the server and the front end code. These require no annotations, but do need to be strongly typed and adhere to the limitations of GraphQL data types. For Java code this primarily means Maps must have Enum's as keys or must not be used at all. This is because Maps are transformed into objects as schema generation time and the keys must be a finite set of known possible values so they can be converted into property fields.</p>
+
+<p>Schemagen-GraphQL can convert most objects into sensible GraphQL data types, however, it sometimes needs help for objects that you need mapped in a custom manner. This is accomplished by writing custom <a href="#type-mappers">Type Mappers</a>.</p>
+
+<p>Sensible defaults are provided for most things. However, there are a things that you must provide:</p>
+
+<ul>
+<li>ITypeFactory 
+-- You must provide an object that knows how to convert objects from GraphQL generic deserialized parameters into Java specific types. The examples package provides a simple <a href="https://github.com/bpatters/schemagen-graphql/blob/master/schemagen-graphql-examples/src/main/java/com/bretpatterson/schemagen/graphql/examples/common/JacksonTypeFactory.java">Jackson based Type Factory</a>.</li>
+<li>
+<a href="https://github.com/bpatters/schemagen-graphql/blob/master/src/main/java/com/bretpatterson/schemagen/graphql/annotations/GraphQLController.java">@GraphQLController annotated objects</a>
+-- with <a href="https://github.com/bpatters/schemagen-graphql/blob/master/src/main/java/com/bretpatterson/schemagen/graphql/annotations/GraphQLQuery.java">@GraphQLQuery annotated methods</a>
+-- with <a href="https://github.com/bpatters/schemagen-graphql/blob/master/src/main/java/com/bretpatterson/schemagen/graphql/annotations/GraphQLMutation.java">@GraphQLMutation annotated methods</a>
+</li>
+</ul>
+
+<p>To build your schema you use the <a href="https://github.com/bpatters/schemagen-graphql/blob/master/src/main/java/com/bretpatterson/schemagen/graphql/GraphQLSchemaBuilder.java">GraphQLSchemaBuilder</a> in conjunction with the required objects above. To create your GraphQL schema do the following:</p>
+
+<div class="highlight highlight-source-java"><pre>
+<span class="pl-smi">GraphQLSchemaBuilder</span> schemaBuilder <span class="pl-k">=</span> <span class="pl-smi">GraphQLSchemaBuilder</span><span class="pl-k">.</span>newBuilder();
+
+<span class="pl-c">// First register your Type Factory so your Schema knows how to convert query/mutation parameters received into java types.</span>
+schemaBuilder<span class="pl-k">.</span>registerTypeFactory(<span class="pl-k">new</span> <span class="pl-smi">JacksonTypeFactory</span>(objectMapper));
+
+<span class="pl-c">// Next pass in a list of Controller objects that you want to use to expose Queries and Mutations through.</span>
+<span class="pl-c">// register the instance of Hello World as our query handler</span>
+.registerGraphQLControllerObjects(<span class="pl-smi">ImmutableList</span><span class="pl-k">.</span><span class="pl-k">&lt;</span><span class="pl-smi">Object</span><span class="pl-k">&gt;</span>of(helloWorld))
+
+
+<span class="pl-c">// Finally Build your GraphQL schema</span>
+<span class="pl-smi">GraphQLSchema</span> schema <span class="pl-k">-</span> schemaBuilder<span class="pl-k">.</span>build();</pre></div>
+
+<p>That's all!</p>
+
+<p>Now it's up to you as to how you expose your schema to the outside world, but assuming you have a query string you want to execute within your schema you can run the schema using:</p>
+
+<div class="highlight highlight-source-java"><pre>
+<span class="pl-smi">ExecutionResult</span> result <span class="pl-k">=</span> <span class="pl-k">new</span> <span class="pl-smi">GraphQL</span>(schema)<span class="pl-k">.</span>execute(queryString);
+</pre></div>
+
+<p>That's it! Any errors encountered can be obtained via <code>result.getErrors()</code>  and your data results can be obtained via the <code>result.getData()</code>.</p>
+
+<h3>
+<a id="graphql-controllers" class="anchor" href="#graphql-controllers" aria-hidden="true"><span aria-hidden="true" class="octicon octicon-link"></span></a>GraphQL Controllers</h3>
+
+<p>GraphQL Controllers are how you expose Top level Queries and Mutations via the GraphQL schema. These objects contain three types of annotations:
+<a href="https://github.com/bpatters/schemagen-graphql/blob/master/src/main/java/com/bretpatterson/schemagen/graphql/annotations/GraphQLController.java">@GraphQLController </a>
+-- with <a href="https://github.com/bpatters/schemagen-graphql/blob/master/src/main/java/com/bretpatterson/schemagen/graphql/annotations/GraphQLQuery.java">@GraphQLQuery annotated methods</a>
+-- with <a href="https://github.com/bpatters/schemagen-graphql/blob/master/src/main/java/com/bretpatterson/schemagen/graphql/annotations/GraphQLMutation.java">@GraphQLMutation annotated methods</a></p>
+
+<h4>
+<a id="graphqlcontroller-annotation" class="anchor" href="#graphqlcontroller-annotation" aria-hidden="true"><span aria-hidden="true" class="octicon octicon-link"></span></a>@GraphQLController annotation</h4>
+
+<p>This annotation identifies the type as a controller and optionally specifies a rootObjectName to wrapper it's query in at the top level. 
+For example if you take the following class:</p>
+
+<div class="highlight highlight-source-java"><pre>
+@<span class="pl-smi">GraphQLController</span>
+<span class="pl-k">public</span> <span class="pl-k">class</span> <span class="pl-en">KeyValueStoreController</span> {
+  <span class="pl-k">@GraphQLIgnore</span>
+  <span class="pl-k">private</span> <span class="pl-k">Map&lt;<span class="pl-smi">String</span>,<span class="pl-smi">String</span>&gt;</span> dataStore;
+
+  <span class="pl-k">@GraphQLQuery</span>(<span class="pl-c1">name</span><span class="pl-k">=</span><span class="pl-s"><span class="pl-pds">"</span>get<span class="pl-pds">"</span></span>)
+  <span class="pl-k">public</span> <span class="pl-smi">String</span> <span class="pl-en">getValue</span>(<span class="pl-smi">String</span> <span class="pl-v">key</span>) {
+     <span class="pl-k">return</span> dataStore<span class="pl-k">.</span>get(key);
+  }
+
+  <span class="pl-k">@GraphQLMutation</span>(<span class="pl-c1">name</span><span class="pl-k">=</span><span class="pl-s"><span class="pl-pds">"</span>put<span class="pl-pds">"</span></span>)
+  <span class="pl-k">public</span> <span class="pl-smi">String</span> <span class="pl-en">setValue</span>(<span class="pl-smi">String</span> <span class="pl-v">key</span>, <span class="pl-smi">String</span> <span class="pl-v">value</span>) {
+    dataStore<span class="pl-k">.</span>put(key,value);
+
+    <span class="pl-k">return</span> value;
+  }
+}</pre></div>
+
+<p>This class exposes a simple key -&gt; value store via GraphQL. There is one query operation, get, and one mutation operation named put. The <code>@GraphQLQuery</code> and <code>@GraphQLMutation</code> annotations by default will name the filed the name of the method. However in this case we have chosen to rename the field exposed for the query and mutations respectively to "get" and "put". </p>
+
+<p>You can then store key/values using:
+<code>mutation Store { put(key:"key1", value:"value1") }</code>
+which outputs: <code>{"put":"value1"}</code></p>
+
+<p>You could then retrieve the value with:
+<code>query MyQuery { get(key:"key1") }</code>
+which outputs: <code>{"get":"value1"}</code></p>
+
+<p>You can also do schema queries like:</p>
+
+<pre><code>{
+  __schema {
+    queryType {
+      name,
+      fields {
+        name
+      }
+    }
+  }
+}
+</code></pre>
+
+<p>which outputs:</p>
+
+<div class="highlight highlight-source-json"><pre>{
+  <span class="pl-s"><span class="pl-pds">"</span>__schema<span class="pl-pds">"</span></span>: {
+    <span class="pl-s"><span class="pl-pds">"</span>queryType<span class="pl-pds">"</span></span>: {
+      <span class="pl-s"><span class="pl-pds">"</span>name<span class="pl-pds">"</span></span>: <span class="pl-s"><span class="pl-pds">"</span>Query<span class="pl-pds">"</span></span>,
+      <span class="pl-s"><span class="pl-pds">"</span>fields<span class="pl-pds">"</span></span>: [
+        {
+          <span class="pl-s"><span class="pl-pds">"</span>name<span class="pl-pds">"</span></span>: <span class="pl-s"><span class="pl-pds">"</span>node<span class="pl-pds">"</span></span>
+        },
+        {
+          <span class="pl-s"><span class="pl-pds">"</span>name<span class="pl-pds">"</span></span>: <span class="pl-s"><span class="pl-pds">"</span>get<span class="pl-pds">"</span></span>
+        }
+      ]
+    }
+  }</pre></div>
+
+      <footer class="site-footer">
+        <span class="site-footer-owner"><a href="https://github.com/bpatters/schemagen-graphql">Schemagen-graphql</a> is maintained by <a href="https://github.com/bpatters">bpatters</a>.</span>
+
+        <span class="site-footer-credits">This page was generated by <a href="https://pages.github.com">GitHub Pages</a> using the <a href="https://github.com/jasonlong/cayman-theme">Cayman theme</a> by <a href="https://twitter.com/jasonlong">Jason Long</a>.</span>
+      </footer>
+
+    </section>
+
+  
+  </body>
+</html>
