@@ -1,4 +1,17 @@
+buildscript {
+    repositories {
+        mavenCentral()
+    }
 
+    dependencies {
+        classpath("org.springframework.boot:spring-boot-gradle-plugin:1.4.2.RELEASE")
+    }
+}
+
+apply plugin: 'org.springframework.boot'
+
+sourceCompatibility = 1.8
+targetCompatibility = 1.8
 
 dependencies {
     compile(project(':')) {
@@ -7,6 +20,8 @@ dependencies {
     compile("com.fasterxml.jackson.core:jackson-core:${jacksonVersion}");
     compile("com.fasterxml.jackson.core:jackson-databind:${jacksonVersion}");
     testCompile group: 'junit', name: 'junit', version: '4.11'
+
+    compile("org.springframework.boot:spring-boot-starter-web")
 }
 
 publishing {
