@@ -61,9 +61,9 @@ import java.lang.reflect.WildcardType;
 import java.util.Collection;
 import java.util.List;
 import java.util.Map;
+import java.util.HashMap;
 import java.util.Set;
 import java.util.Stack;
-
 
 /**
  * This is the meat of the schema gen package. Utilizing the configured properties it will traverse the objects provided and generate a type
@@ -599,6 +599,9 @@ public class GraphQLObjectMapper implements IGraphQLObjectMapper, TypeResolver {
 			if (graphQLQueryable.isPresent()) {
 				objectInstance = classItem.newInstance();
 			}
+
+			boolean popTypeArguments = false;
+
 			// if we are a generic object then we need to build a generic variable to type mapping
 			if (type instanceof ParameterizedType) {
 				// if it's empty then we are at root generic class so create new type argument map for usage
@@ -609,6 +612,7 @@ public class GraphQLObjectMapper implements IGraphQLObjectMapper, TypeResolver {
 					typeArguments.push(Maps.newHashMap(typeArguments.peek()));
 				}
 				buildGenericArgumentTypeMap((ParameterizedType) type);
+				popTypeArguments = true;
 			}
 			String classPackage = "";
 
@@ -634,8 +638,32 @@ public class GraphQLObjectMapper implements IGraphQLObjectMapper, TypeResolver {
 					}
 				}
 
-				// pop currentContext
-				classItem = classItem.getSuperclass();
+				// Check generic superclass first to ensure we do not miss any Generic Parameters
+				Type superClass = classItem .getGenericSuperclass();
+
+				if (superClass == null) {
+					classItem = classItem.getSuperclass();
+				} else if (superClass instanceof Class) {
+					classItem = (Class<?>) superClass;
+				} else if (superClass instanceof ParameterizedType) {
+					ParameterizedType parameterizedType = (ParameterizedType) superClass;
+
+					if (parameterizedType.getActualTypeArguments().length > 0) {
+						// For Scenario in which non Generic class extends Generic Class
+						// E.g. Person extends Entity<KEY>
+						if (typeArguments.empty()) {
+							typeArguments.push(new HashMap<String, Type>());
+							popTypeArguments = true;
+						}
+					}
+
+					buildGenericArgumentTypeMap(parameterizedType);
+
+					classItem = (Class<?>) parameterizedType.getRawType();
+				} else {
+					throw new IllegalArgumentException("Cannot Process SuperClass: " + superClass);
+				}
+
 				if (classItem != null && classItem.getPackage() != null) {
 					classPackage = classItem.getPackage().getName();
 				} else {
@@ -644,9 +672,10 @@ public class GraphQLObjectMapper implements IGraphQLObjectMapper, TypeResolver {
 			}
 
 			// exiting context of current type arguments if we processed a generic type
-			if (type instanceof ParameterizedType) {
+			if (popTypeArguments) {
 				typeArguments.pop();
 			}
+
 			glType.fields(fields.build());
 
 			// for classes that implement Node we need to declare them of type interface

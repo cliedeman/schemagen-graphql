@@ -595,4 +595,30 @@ public class GraphQLObjectMapperTest {
 
 		assertTrue(objectType.getFieldDefinitions().isEmpty());
 	}
+
+	class GenericBase<ID> {
+		private ID id;
+
+		ID getId() {
+			return id;
+		}
+	}
+
+	class GenericSubclass extends GraphQLObjectMapperTest.GenericBase<Long> {}
+
+	/**
+	 * Issue #15
+	 */
+	@Test
+	public void testSyntheticBridgeMethod() {
+		IGraphQLObjectMapper graphQLObjectMapper = newGraphQLObjectMapper(
+				ImmutableList.<IGraphQLTypeMapper> builder().addAll(GraphQLSchemaBuilder.getDefaultTypeMappers()).build());
+
+		GraphQLObjectType objectType = (GraphQLObjectType) graphQLObjectMapper.getOutputType(new TypeToken<GraphQLObjectMapperTest.GenericSubclass>() {
+		}.getType());
+
+		assertNotNull(objectType.getFieldDefinition("id"));
+		assertEquals("id", objectType.getFieldDefinition("id").getName());
+		assertEquals(Scalars.GraphQLLong, objectType.getFieldDefinition("id").getType());
+	}
 }
